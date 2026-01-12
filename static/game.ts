@@ -63,7 +63,62 @@ for (let c = 0; c <= COLS; ++c) {
 
 app.stage.addChild(grid);
 
-const bpm = 170;
+/**
+ * Draw a square with padding around it.
+ * @param g object to draw on
+ * @param x
+ * @param y
+ * @param w
+ * @param h
+ * @param padding number of pixels to remove from each side of the square
+ */
+function paddedRect(
+	g: Graphics,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
+	padding: number,
+) {
+	g.rect(x + padding, y + padding, w - 2 * padding, h - 2 * padding);
+}
+
+/**
+ * Draw a 2x2 piece made of 4 squares.
+ * @param colors
+ * @param config 4-bit number representing which squares use color1 (0) or color2 (1).
+ * @returns graphics object representing the piece
+ */
+function drawPiece(
+	colors: {color1: number; color2: number},
+	config: number,
+) {
+	const piece = new Graphics();
+	const {color1, color2} = colors;
+
+	for (let i = 0; i < 4; ++i) {
+		const x = (i % 2) * squareSize;
+		const y = Math.floor(i / 2) * squareSize;
+		paddedRect(piece, x, y, squareSize, squareSize, 2);
+		if ((config & (1 << i)) === 0) {
+			piece.fill(color1);
+		} else {
+			piece.fill(color2);
+		}
+	}
+	
+	return piece;
+}
+
+const piece = drawPiece(
+	{color1: 0x35a99a, color2: 0xff5aae},
+	0b1101,
+);
+piece.x = startX + 7 * squareSize;
+piece.y = startY - 2 * squareSize;
+app.stage.addChild(piece);
+
+const bpm = 138;
 
 let time = 0;
 const timeline = new Graphics();
