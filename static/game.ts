@@ -63,6 +63,23 @@ for (let c = 0; c <= COLS; ++c) {
 
 app.stage.addChild(grid);
 
-app.ticker.add(_ => {
+const bpm = 170;
 
+let time = 0;
+const timeline = new Graphics();
+timeline.setStrokeStyle({
+	width: 4,
+	color: 0xffffff,
+	cap: 'round',
+});
+timeline.moveTo(startX, startY);
+timeline.lineTo(startX, endY);
+timeline.stroke();
+app.stage.addChild(timeline);
+
+app.ticker.add(ticker => {
+	timeline.x = (time / 1000) * (bpm / 60) * (2 * squareSize) % (COLS * squareSize);
+
+	// move timeline (2 columns = 1 beat)
+	time += ticker.deltaMS;
 });
