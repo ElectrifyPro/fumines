@@ -6,14 +6,15 @@
 }
 
 body {
+	display: block;
 	background: #333333;
 	color: white;
+	height: 100%;
 	margin: 0;
 	overflow: hidden;
 }
 
 #ui {
-	height: 100vh;
 	box-sizing: border-box;
 	padding: 10px;
 	margin: 0;

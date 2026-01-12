@@ -1,5 +1,8 @@
 import {Application, Graphics} from 'pixi.js';
 
+import {FixedLoop} from './game_loop';
+import {keys} from './keys';
+
 const ROWS = 10;
 const COLS = 16;
 
@@ -20,16 +23,24 @@ window.addEventListener('resize', () => {
 	canvas.height = window.innerHeight;
 });
 
+const squareSize = 50;
+const startX = (app.renderer.width - COLS * squareSize) / 2;
+const startY = (app.renderer.height - ROWS * squareSize) / 2;
+const endY = startY + ROWS * squareSize;
+
+const dropGuide = new Graphics();
+dropGuide.rect(startX, startY, 2 * squareSize, ROWS * squareSize);
+dropGuide.fill({
+	color: 0,
+	alpha: 0.5,
+});
+app.stage.addChild(dropGuide);
+
 const grid = new Graphics();
 grid.setStrokeStyle({
 	width: 2,
 	color: 0xaaaaaa,
 })
-
-const squareSize = 50;
-const startX = (app.renderer.width - COLS * squareSize) / 2;
-const startY = (app.renderer.height - ROWS * squareSize) / 2;
-const endY = startY + ROWS * squareSize;
 
 for (let r = 0; r <= ROWS; ++r) {
 	grid.moveTo(startX, startY + r * squareSize);
@@ -90,6 +101,8 @@ class Piece {
 
 	/**
 	 * Row index of the piece's top side, regardless of its rotation.
+	 *
+	 * The row index can have a fractional component to represent falling between rows.
 	 */
 	row: number;
 
@@ -192,6 +205,9 @@ class Piece {
 
 		const targetRotation = this.rotation * (Math.PI / 2);
 		this.g.rotation = this.g.rotation + (targetRotation - this.g.rotation) * 0.4;
+
+		// no interpolation of vertical movement
+		this.g.y = startY + (this.row + 1) * squareSize;
 	}
 }
 
@@ -201,6 +217,7 @@ app.stage.addChild(piece.g);
 setInterval(() => {
 	piece.rotate(Math.random() < 0.5 ? -1 : 1);
 	piece.move(Math.random() < 0.5 ? -1 : 1);
+	dropGuide.x = piece.column * squareSize;
 }, 1000);
 
 const bpm = 138;
@@ -225,3 +242,11 @@ app.ticker.add(ticker => {
 
 	piece.animate();
 });
+
+const loop = new FixedLoop(() => {
+	// piece.row += 0.01;
+	if (keys.size > 0) {
+		console.log('Keys currently pressed:', Array.from(keys).join(', '));
+	}
+}, 1000 / 64);
+loop.start();
