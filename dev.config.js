@@ -3,7 +3,7 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import path from 'path';
 
 export default {
-	entry: ['./static/main.tsx', './static/styles/main.css'],
+	entry: ['./static/main.tsx', './static/styles/main.css', './static/game.ts'],
 	mode: 'development',
 	devtool: 'eval-source-map',
 	watch: true,
