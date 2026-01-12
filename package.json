@@ -1,0 +1,22 @@
+{
+	"name": "fumines",
+	"type": "module",
+	"version": "1.0.0",
+	"devDependencies": {
+		"@swc/core": "^1.3.59",
+		"@types/react": "^18.2.6",
+		"@types/react-dom": "^18.2.4",
+		"css-loader": "^6.7.4",
+		"css-minimizer-webpack-plugin": "^5.0.0",
+		"html-webpack-plugin": "^5.5.1",
+		"mini-css-extract-plugin": "^2.7.6",
+		"swc-loader": "^0.2.3",
+		"webpack": "^5.83.1",
+		"webpack-cli": "^5.1.4"
+	},
+	"dependencies": {
+		"pixi.js": "^8.15.0",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0"
+	}
+}
