@@ -174,6 +174,12 @@ export class State {
 				const colors = this.piece.columnColors();
 				this.grid[this.piece.column].push(...colors.left);
 				this.grid[this.piece.column + 1].push(...colors.right);
+
+				// cut off full columns (Arise only)
+				for (let c = 0; c < COLS; ++c) {
+					this.grid[c].splice(ROWS, this.grid[c].length - ROWS);
+				}
+
 				grid.render(this.grid);
 
 				// spawn new piece
