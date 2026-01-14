@@ -9,12 +9,20 @@ import {DroppedPiece, Piece} from './piece';
  */
 export class State {
 	/**
-	 * The current grid state in column-major order (an array of COLS columns).
+	 * The current grid state in column-major order (an array of COLS columns). The values in the inner arrays are raw color values for the square.
+	 *
 	 * Each column has a variable length representing the pieces stacked in that column.
 	 *
 	 * This only includes placed pieces, not the falling piece.
 	 */
 	grid: number[][];
+
+	/**
+	 * Grid of booleans representing which squares are part of a match and should be cleared when the timeline passes over them.
+	 *
+	 * The shape of this array matches the `grid` array.
+	 */
+	matched: boolean[][] = [];
 
 	/**
 	 * The current piece.
@@ -120,6 +128,65 @@ export class State {
 	}
 
 	/**
+	 * Finish dropping the current piece immediately.
+	 */
+	finishDrop() {
+		if (this.piece instanceof DroppedPiece) {
+			// add to grid
+			const colors = this.piece.columnColors();
+			this.grid[this.piece.column].push(...colors.left);
+			this.grid[this.piece.column + 1].push(...colors.right);
+
+			// cut off full columns (Arise only)
+			for (let c = 0; c < COLS; ++c) {
+				this.grid[c].splice(ROWS, this.grid[c].length - ROWS);
+			}
+
+			this.setMatches();
+
+			grid.render(this.grid, this.matched);
+
+			// spawn new piece
+			this.piece = this.queue.shift()!;
+			queue.dequeue();
+			const newPiece = new Piece(7, -2, {color1: 0x35a99a, color2: 0xff5aae}, Math.floor(Math.random() * 16));
+			this.queue.push(newPiece);
+			queue.enqueue(newPiece);
+
+			pieceContainer.removeChildren();
+			pieceContainer.addChild(this.piece.g);
+			dropGuide.alignToColumn(this.piece.column);
+
+			this.movement = applyDropCompletion(this.movement);
+		}
+	}
+
+	/**
+	 * Find all 2x2 squares to be cleared from the grid.
+	 */
+	setMatches() {
+		this.matched = this.grid.map(col => new Array(col.length).fill(false));
+
+		for (let c = 0; c < COLS - 1; ++c) {
+			const colHeight = this.grid[c].length;
+			const nextColHeight = this.grid[c + 1].length;
+			const maxRow = Math.min(colHeight, nextColHeight) - 1;
+
+			for (let r = 0; r < maxRow; ++r) {
+				const color = this.grid[c][r];
+				if (color === this.grid[c][r + 1] &&
+					color === this.grid[c + 1][r] &&
+					color === this.grid[c + 1][r + 1]) {
+					this.matched[c][r] = true;
+					this.matched[c][r + 1] = true;
+					this.matched[c + 1][r] = true;
+					this.matched[c + 1][r + 1] = true;
+				}
+			}
+		}
+	}
+
+	/**
 	 * Update the game state.
 	 */
 	tick() {
@@ -170,30 +237,7 @@ export class State {
 			}
 
 			if (leftLanded && rightLanded) {
-				// add to grid
-				const colors = this.piece.columnColors();
-				this.grid[this.piece.column].push(...colors.left);
-				this.grid[this.piece.column + 1].push(...colors.right);
-
-				// cut off full columns (Arise only)
-				for (let c = 0; c < COLS; ++c) {
-					this.grid[c].splice(ROWS, this.grid[c].length - ROWS);
-				}
-
-				grid.render(this.grid);
-
-				// spawn new piece
-				this.piece = this.queue.shift()!;
-				queue.dequeue();
-				const newPiece = new Piece(7, -2, {color1: 0x35a99a, color2: 0xff5aae}, Math.floor(Math.random() * 16));
-				this.queue.push(newPiece);
-				queue.enqueue(newPiece);
-
-				pieceContainer.removeChildren();
-				pieceContainer.addChild(this.piece.g);
-				dropGuide.alignToColumn(this.piece.column);
-
-				this.movement = applyDropCompletion(this.movement);
+				this.finishDrop();
 			}
 		}
 	}
