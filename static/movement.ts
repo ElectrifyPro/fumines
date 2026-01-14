@@ -88,40 +88,79 @@ export type HandlingState = Idle | Started | AutoRepeat | Dropping;
  */
 export type Action =
 	| {move: 1 | -1}
+	| {rotate: 1 | -1}
 	| {startDrop: true}
+
+/**
+ * If the conditions are met, injects a rotation action into the given actions array.
+ * @param justPressed array of keys that were just pressed
+ * @param actions array of actions to potentially add a rotation action to
+ * @returns updated array of actions with rotation action added if applicable
+ */
+export function maybeAddRotate(
+	justPressed: string[],
+	actions: Action[],
+): Action[] {
+	const aPressed = justPressed.includes('a');
+	const dPressed = justPressed.includes('d');
+
+	if (aPressed && dPressed) {
+		// both keys pressed - do nothing
+		return actions;
+	} else if (aPressed) {
+		return [{rotate: -1}, ...actions];
+	} else if (dPressed) {
+		return [{rotate: 1}, ...actions];
+	}
+
+	return actions;
+}
 
 /**
  * Apply the handling logic for piece movement based on the current handling state and pressed keys. Returns `undefined` if the state does not change.
  * @param handlingState current handling state
- * @param keysPressed array of currently pressed keys
+ * @param keysHeld array of currently held keys
+ * @param justPressed array of keys that were just pressed
  * @returns object with the updated handling state and what action to take (if any)
  */
 export function applyHandling(
 	handlingState: HandlingState,
-	keysPressed: string[],
-): {state: HandlingState} & (Action | {}) {
-	const leftPressed = keysPressed.includes('ArrowLeft');
-	const rightPressed = keysPressed.includes('ArrowRight');
-	const downPressed = keysPressed.includes('ArrowDown');
+	keysHeld: string[],
+	justPressed: string[],
+): {state: HandlingState, actions: Action[]} {
+	const leftPressed = keysHeld.includes('ArrowLeft');
+	const rightPressed = keysHeld.includes('ArrowRight');
+	const downPressed = justPressed.includes('ArrowDown');
 
 	switch (handlingState.kind) {
-		case 'idle':
+		case 'idle': {
+			const actions = maybeAddRotate(justPressed, []);
+
 			if (downPressed) {
-				return {state: dropping(), startDrop: true};
-			} else if (leftPressed && rightPressed) {
+				actions.push({startDrop: true});
+				return {state: dropping(), actions};
+			}
+
+			if (leftPressed && rightPressed) {
 				// both keys pressed - do nothing
-				return {state: handlingState};
+				return {state: handlingState, actions};
 			} else if (leftPressed) {
 				// immediate movement, then wait for DAS
-				return {state: started(-1), move: -1};
+				actions.push({move: -1});
+				return {state: started(-1), actions};
 			} else if (rightPressed) {
-				return {state: started(1), move: 1};
+				actions.push({move: 1});
+				return {state: started(1), actions};
 			}
-			return {state: handlingState};
+			return {state: handlingState, actions};
+		}
 
-		case 'started':
+		case 'started': {
+			const actions = maybeAddRotate(justPressed, []);
+
 			if (downPressed) {
-				return {state: dropping(), startDrop: true};
+				actions.push({startDrop: true});
+				return {state: dropping(), actions};
 			}
 
 			if (
@@ -131,15 +170,21 @@ export function applyHandling(
 			) {
 				const newTicksHeld = handlingState.ticksHeld + 1;
 				if (newTicksHeld >= DAS_TICKS) {
-					return {state: autoRepeat(handlingState.direction), move: handlingState.direction};
+					actions.push({move: handlingState.direction});
+					return {state: autoRepeat(handlingState.direction), actions};
 				}
-				return {state: {...handlingState, ticksHeld: newTicksHeld}};
-			}
-			return {state: idle()};
 
-		case 'autoRepeat':
+				return {state: {...handlingState, ticksHeld: newTicksHeld}, actions};
+			}
+			return {state: idle(), actions};
+		}
+
+		case 'autoRepeat': {
+			const actions = maybeAddRotate(justPressed, []);
+
 			if (downPressed) {
-				return {state: dropping(), startDrop: true};
+				actions.push({startDrop: true});
+				return {state: dropping(), actions};
 			}
 
 			if (
@@ -148,14 +193,16 @@ export function applyHandling(
 			) {
 				const newTicksSinceLastMove = handlingState.ticksSinceLastMove + 1;
 				if (newTicksSinceLastMove >= ARR_TICKS) {
-					return {state: autoRepeat(handlingState.direction), move: handlingState.direction};
+					actions.push({move: handlingState.direction});
+					return {state: autoRepeat(handlingState.direction), actions};
 				}
-				return {state: {...handlingState, ticksSinceLastMove: newTicksSinceLastMove}};
+				return {state: {...handlingState, ticksSinceLastMove: newTicksSinceLastMove}, actions};
 			}
-			return {state: idle()};
+			return {state: idle(), actions};
+		}
 
 		case 'dropping':
 			// no movement while dropping
-			return {state: handlingState};
+			return {state: handlingState, actions: []};
 	}
 }

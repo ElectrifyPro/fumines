@@ -4,7 +4,7 @@
 export let focused = false;
 
 /**
- * A set containing keys that are currently pressed.
+ * A set containing keys that are being held down.
  */
 export const keys: Set<string> = new Set();
 

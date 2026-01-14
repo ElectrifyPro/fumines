@@ -1,7 +1,7 @@
 import {COLS, ROWS} from './config';
 import {dropGuide, grid, pieceContainer} from './graphics';
-import {HandlingState, applyHandling, idle} from './handling';
 import {keys} from './keys';
+import {HandlingState, applyHandling, idle} from './movement';
 import {DroppedPiece, Piece} from './piece';
 
 /**
@@ -40,6 +40,11 @@ export class State {
 	 * State machine that handles DAS and ARR.
 	 */
 	movement: HandlingState;
+
+	/**
+	 * Keys pressed in the previous tick.
+	 */
+	previousKeys: Set<string> = new Set();
 
 	constructor(bpm: number) {
 		this.grid = [];
@@ -111,17 +116,28 @@ export class State {
 	 * Update the game state.
 	 */
 	tick() {
-		// keys pressed this frame
-		const keysPressed = [...keys];
+		// keys held this frame
+		const keysHeld = [...keys];
+
+		// keys just pressed this frame
+		const justPressed = [...keys.difference(this.previousKeys)];
 
 		// handle movement with DAS and ARR
-		const result = applyHandling(this.movement, keysPressed);
+		const result = applyHandling(this.movement, keysHeld, justPressed);
 		this.movement = result.state;
-		if ('move' in result) {
-			this.move(result.move);
-		} else if ('startDrop' in result) {
-			this.startDrop();
+		for (const action of result.actions) {
+			if ('rotate' in action) {
+				this.rotate(action.rotate);
+			}
+			if ('move' in action) {
+				this.move(action.move);
+			}
+			if ('startDrop' in action) {
+				this.startDrop();
+			}
 		}
+
+		this.previousKeys = new Set(keys);
 
 		if (this.piece instanceof Piece) {
 			// TODO: gravity
