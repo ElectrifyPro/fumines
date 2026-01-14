@@ -49,6 +49,23 @@ interface Dropping {
 }
 
 /**
+ * Represents the state when a piece is being dropped with DAS buffering.
+ */
+interface DroppingDasBuffer {
+	kind: 'droppingDasBuffer';
+
+	/**
+	 * Number of ticks a movement key has been held down. This is used to implement DAS buffering while dropping.
+	 */
+	ticksHeld: number;
+
+	/**
+	 * Direction of movement: 1 for right, -1 for left.
+	 */
+	direction: 1 | -1;
+}
+
+/**
  * Create a new idle handling state.
  */
 export function idle(): Idle {
@@ -59,8 +76,8 @@ export function idle(): Idle {
  * Create a new started handling state.
  * @param direction direction of movement: 1 for right, -1 for left
  */
-export function started(direction: 1 | -1): Started {
-	return {kind: 'started', ticksHeld: 0, direction};
+export function started(direction: 1 | -1, ticksHeld: number = 0): Started {
+	return {kind: 'started', ticksHeld, direction};
 }
 
 /**
@@ -79,9 +96,17 @@ export function dropping(): Dropping {
 }
 
 /**
+ * Create an initial dropping with DAS buffer handling state.
+ * @param direction direction of movement: 1 for right, -1 for left
+ */
+export function droppingDasBuffer(direction: 1 | -1): DroppingDasBuffer {
+	return {kind: 'droppingDasBuffer', ticksHeld: 1, direction};
+}
+
+/**
  * All possible handling states.
  */
-export type HandlingState = Idle | Started | AutoRepeat | Dropping;
+export type HandlingState = Idle | Started | AutoRepeat | Dropping | DroppingDasBuffer;
 
 /**
  * Possible actions resulting from handling logic.
@@ -202,7 +227,55 @@ export function applyHandling(
 		}
 
 		case 'dropping':
-			// no movement while dropping
+			// no movement while dropping, but DAS can be buffered
+			if (leftPressed && rightPressed) {
+				// no buffering
+				return {state: handlingState, actions: []};
+			} else if (leftPressed) {
+				return {state: droppingDasBuffer(-1), actions: []};
+			} else if (rightPressed) {
+				return {state: droppingDasBuffer(1), actions: []};
+			}
 			return {state: handlingState, actions: []};
+
+		case 'droppingDasBuffer':
+			if (
+				(handlingState.direction === -1 && leftPressed) ||
+				(handlingState.direction === 1 && rightPressed)
+			) {
+				const newTicksHeld = handlingState.ticksHeld + 1;
+				return {
+					state: {...handlingState, ticksHeld: newTicksHeld},
+					actions: [],
+				};
+			}
+
+			return {state: dropping(), actions: []};
+	}
+}
+
+/**
+ * Apply the state logic when a piece has finished dropping.
+ * @param handlingState current handling state
+ * @returns updated handling state after drop completion
+ */
+export function applyDropCompletion(
+	handlingState: HandlingState,
+): HandlingState {
+	switch (handlingState.kind) {
+		case 'dropping':
+			return idle();
+
+		case 'droppingDasBuffer':
+			if (handlingState.ticksHeld >= DAS_TICKS) {
+				// start ARR immediately after drop
+				return autoRepeat(handlingState.direction);
+			} else {
+				// in the middle of DAS
+				return started(handlingState.direction, handlingState.ticksHeld);
+			}
+
+		default:
+			return handlingState;
 	}
 }

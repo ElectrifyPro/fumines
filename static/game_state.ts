@@ -1,7 +1,7 @@
 import {COLS, ROWS} from './config';
 import {dropGuide, grid, pieceContainer, queue} from './graphics';
 import {keys} from './keys';
-import {HandlingState, applyHandling, idle} from './movement';
+import {HandlingState, applyDropCompletion, applyHandling, idle} from './movement';
 import {DroppedPiece, Piece} from './piece';
 
 /**
@@ -193,7 +193,7 @@ export class State {
 				pieceContainer.addChild(this.piece.g);
 				dropGuide.alignToColumn(this.piece.column);
 
-				this.movement = idle();
+				this.movement = applyDropCompletion(this.movement);
 			}
 		}
 	}
