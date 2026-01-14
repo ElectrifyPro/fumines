@@ -1,16 +1,8 @@
 import {COLS, ROWS} from './config';
-import {dropGuide, pieceContainer} from './graphics';
+import {dropGuide, grid, pieceContainer} from './graphics';
 import {HandlingState, applyHandling, idle} from './handling';
 import {keys} from './keys';
 import {DroppedPiece, Piece} from './piece';
-
-/**
- * State of a cell in the Lumines grid.
- */
-export enum CellState {
-	Color1,
-	Color2,
-}
 
 /**
  * Lumines game state.
@@ -22,7 +14,7 @@ export class State {
 	 *
 	 * This only includes placed pieces, not the falling piece.
 	 */
-	grid: CellState[][];
+	grid: number[][];
 
 	/**
 	 * The current piece.
@@ -159,6 +151,7 @@ export class State {
 				const colors = this.piece.columnColors();
 				this.grid[this.piece.column].push(...colors.left);
 				this.grid[this.piece.column + 1].push(...colors.right);
+				grid.render(this.grid);
 
 				// spawn new piece
 				this.piece = this.queue.shift()!;

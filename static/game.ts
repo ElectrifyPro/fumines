@@ -12,9 +12,8 @@ window.addEventListener('resize', () => {
 
 const bpm = 138;
 const state = new State(bpm);
-state.grid[7] = [0, 0];
 
-app.stage.addChild(dropGuide.g, grid.g, pieceContainer, timeline.g);
+app.stage.addChild(dropGuide.g, grid.c, pieceContainer, timeline.g);
 
 app.ticker.add(_ => {
 	state.piece.animate();

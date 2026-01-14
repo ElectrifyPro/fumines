@@ -1,6 +1,7 @@
 import {Container, Graphics} from 'pixi.js';
 
 import {COLS, ROWS, SQUARE_SIZE, app} from './config';
+import {paddedRect} from './piece';
 
 const startX = (app.renderer.width - COLS * SQUARE_SIZE) / 2;
 const startY = (app.renderer.height - ROWS * SQUARE_SIZE) / 2;
@@ -8,10 +9,12 @@ const endY = startY + ROWS * SQUARE_SIZE;
 
 export const grid = {
 	/**
-	 * Graphics object that draws the Lumines grid.
+	 * Graphics container object that holds the Lumines grid and the pieces rendered on it.
 	 */
-	g: (() => {
+	c: (() => {
+		const container = new Container();
 		const grid = new Graphics();
+		container.addChild(grid);
 
 		grid.setStrokeStyle({
 			width: 2,
@@ -48,8 +51,46 @@ export const grid = {
 			grid.stroke();
 		}
 
-		return grid;
+		return container;
 	})(),
+
+	/**
+	 * Render the pieces in the grid to the graphics object.
+	 * @param grid 2D array representing the grid state
+	 */
+	render(grid: number[][]) {
+		if (this.c.children.length > 1) {
+			this.c.removeChildren(1); // remove all but the grid lines
+		}
+
+		const pieces = new Graphics();
+		this.c.addChild(pieces);
+
+		for (let c = 0; c < COLS; ++c) {
+			for (let r = 0; r < grid[c].length; ++r) {
+				const color = grid[c][r];
+				if (color === undefined) continue;
+
+				paddedRect(
+					pieces,
+					startX + c * SQUARE_SIZE,
+					startY + (ROWS - 1 - r) * SQUARE_SIZE,
+					SQUARE_SIZE,
+					SQUARE_SIZE,
+					2,
+				);
+				pieces.fill(color);
+
+				// pieces.rect(
+				// 	startX + c * SQUARE_SIZE + 2,
+				// 	startY + (ROWS - 1 - r) * SQUARE_SIZE + 2,
+				// 	SQUARE_SIZE - 4,
+				// 	SQUARE_SIZE - 4,
+				// );
+				// pieces.fill(color);
+			}
+		}
+	},
 };
 
 /**

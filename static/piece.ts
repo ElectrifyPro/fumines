@@ -14,7 +14,7 @@ const startY = (app.renderer.height - ROWS * SQUARE_SIZE) / 2;
  * @param h
  * @param padding number of pixels to remove from each side of the square
  */
-function paddedRect(
+export function paddedRect(
 	g: Graphics,
 	x: number,
 	y: number,
