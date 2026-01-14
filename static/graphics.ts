@@ -1,4 +1,5 @@
-import {Graphics} from 'pixi.js';
+import {Container, Graphics} from 'pixi.js';
+
 import {COLS, ROWS, SQUARE_SIZE, app} from './config';
 
 const startX = (app.renderer.width - COLS * SQUARE_SIZE) / 2;
@@ -103,3 +104,8 @@ export const timeline = {
 		this.g.x = (time / 1000) * (bpm / 60) * (2 * SQUARE_SIZE) % (COLS * SQUARE_SIZE);
 	},
 };
+
+/**
+ * Container for piece graphics.
+ */
+export const pieceContainer = new Container();

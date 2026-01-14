@@ -26,3 +26,13 @@ await app.init({
 	canvas,
 	resizeTo: canvas,
 });
+
+/**
+ * DAS: Number of game ticks to wait when a key is held down before triggering auto-repeat movement.
+ */
+export const DAS_TICKS = 10;
+
+/**
+ * ARR: Number of game ticks between each auto-repeat movement when a key is held down.
+ */
+export const ARR_TICKS = 1;

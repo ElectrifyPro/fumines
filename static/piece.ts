@@ -1,7 +1,5 @@
 import {Graphics} from 'pixi.js';
 
-import {FixedLoop} from './game_loop';
-import {keys} from './keys';
 import {COLS, ROWS, SQUARE_SIZE, app} from './config';
 
 const startX = (app.renderer.width - COLS * SQUARE_SIZE) / 2;
@@ -329,10 +327,13 @@ export class DroppedPiece {
 		};
 
 		this.g = drawDroppedPiece(this.colors, this.config);
-		this.g.left.x = startX + this.column * SQUARE_SIZE;
 		this.g.left.y = startY + this.row.left * SQUARE_SIZE;
-		this.g.right.x = startX + (this.column + 1) * SQUARE_SIZE;
 		this.g.right.y = startY + this.row.right * SQUARE_SIZE;
+
+		// if the piece was in the middle of interpolation when dropped, use
+		// those x-positions
+		this.g.left.x = piece.g.x - SQUARE_SIZE;
+		this.g.right.x = piece.g.x + 0;
 	}
 
 	columnColors() {
@@ -351,6 +352,12 @@ export class DroppedPiece {
 	 * Update the graphics object's transform to match the piece's transform.
 	 */
 	animate() {
+		const leftTargetX = startX + this.column * SQUARE_SIZE;
+		this.g.left.x = this.g.left.x + (leftTargetX - this.g.left.x) * 0.4;
+
+		const rightTargetX = startX + (this.column + 1) * SQUARE_SIZE;
+		this.g.right.x = this.g.right.x + (rightTargetX - this.g.right.x) * 0.4;
+
 		this.g.left.y = startY + this.row.left * SQUARE_SIZE;
 		this.g.right.y = startY + this.row.right * SQUARE_SIZE;
 	}

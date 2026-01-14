@@ -1,4 +1,7 @@
 import {COLS, ROWS} from './config';
+import {dropGuide, pieceContainer} from './graphics';
+import {HandlingState, applyHandling, idle} from './handling';
+import {keys} from './keys';
 import {DroppedPiece, Piece} from './piece';
 
 /**
@@ -41,6 +44,11 @@ export class State {
 	 */
 	bpm: number;
 
+	/**
+	 * State machine that handles DAS and ARR.
+	 */
+	movement: HandlingState;
+
 	constructor(bpm: number) {
 		this.grid = [];
 		for (let i = 0; i < COLS; ++i) {
@@ -53,8 +61,11 @@ export class State {
 			this.queue.push(piece);
 		}
 		this.piece = this.queue.shift()!;
+		pieceContainer.addChild(this.piece.g);
+		dropGuide.alignToColumn(this.piece.column);
 
 		this.bpm = bpm;
+		this.movement = idle();
 	}
 
 	/**
@@ -76,6 +87,7 @@ export class State {
 	move(direction: 1 | -1) {
 		if (this.piece instanceof Piece) {
 			this.piece.move(direction);
+			dropGuide.alignToColumn(this.piece.column);
 		}
 	}
 
@@ -98,6 +110,8 @@ export class State {
 	startDrop() {
 		if (this.piece instanceof Piece) {
 			this.piece = new DroppedPiece(this.piece);
+			pieceContainer.removeChildren();
+			pieceContainer.addChild(this.piece.g.left, this.piece.g.right);
 		}
 	}
 
@@ -105,6 +119,18 @@ export class State {
 	 * Update the game state.
 	 */
 	tick() {
+		// keys pressed this frame
+		const keysPressed = [...keys];
+
+		// handle movement with DAS and ARR
+		const result = applyHandling(this.movement, keysPressed);
+		this.movement = result.state;
+		if ('move' in result) {
+			this.move(result.move);
+		} else if ('startDrop' in result) {
+			this.startDrop();
+		}
+
 		if (this.piece instanceof Piece) {
 			// TODO: gravity
 		} else if (this.piece instanceof DroppedPiece) {
@@ -138,6 +164,12 @@ export class State {
 				this.piece = this.queue.shift()!;
 				const newPiece = new Piece(7, -2, {color1: 0x35a99a, color2: 0xff5aae}, Math.floor(Math.random() * 16));
 				this.queue.push(newPiece);
+
+				pieceContainer.removeChildren();
+				pieceContainer.addChild(this.piece.g);
+				dropGuide.alignToColumn(this.piece.column);
+
+				this.movement = idle();
 			}
 		}
 	}
