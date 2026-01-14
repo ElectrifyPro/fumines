@@ -1,7 +1,7 @@
 import {Container, Graphics} from 'pixi.js';
 
 import {COLS, ROWS, SQUARE_SIZE, app} from './config';
-import {paddedRect} from './piece';
+import {Piece, drawPiece, paddedRect} from './piece';
 
 const startX = (app.renderer.width - COLS * SQUARE_SIZE) / 2;
 const startY = (app.renderer.height - ROWS * SQUARE_SIZE) / 2;
@@ -90,6 +90,65 @@ export const grid = {
 				// pieces.fill(color);
 			}
 		}
+	},
+};
+
+/**
+ * The queue of upcoming pieces.
+ */
+export const queue = {
+	/**
+	 * Container to render the pieces in the queue.
+	 */
+	c: (() => {
+		const container = new Container();
+		container.x = startX - (2 * SQUARE_SIZE) - 20;
+		container.y = startY;
+		return container;
+	})(),
+
+	/**
+	 * Pieces currently in the queue.
+	 */
+	pieces: [] as Piece[],
+
+	/**
+	 * Override the pieces in the queue.
+	 */
+	setPieces(pieces: Piece[]) {
+		this.c.removeChildren();
+
+		this.pieces = pieces.slice();
+		
+		for (let i = 0; i < pieces.length; ++i) {
+			const g = drawPiece(pieces[i].colors, pieces[i].config);
+			g.x = 0;
+			g.y = i * (2 * SQUARE_SIZE + 10);
+			this.c.addChild(g);
+		}
+	},
+
+	/**
+	 * Remove the piece at the front of the queue.
+	 */
+	dequeue() {
+		this.c.removeChildAt(0);
+		this.pieces.shift();
+
+		for (let i = 0; i < this.c.children.length; ++i) {
+			this.c.children[i].y = i * (2 * SQUARE_SIZE + 10);
+		}
+	},
+
+	/**
+	 * Add a new piece to the end of the queue.
+	 */
+	enqueue(piece: Piece) {
+		this.pieces.push(piece);
+		const g = drawPiece(piece.colors, piece.config);
+		g.x = 0;
+		g.y = (this.pieces.length - 1) * (2 * SQUARE_SIZE + 10);
+		this.c.addChild(g);
 	},
 };
 

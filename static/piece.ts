@@ -31,7 +31,7 @@ export function paddedRect(
  * @param config 4-bit number representing which squares use color1 (0) or color2 (1).
  * @returns graphics object representing the piece
  */
-function drawPiece(
+export function drawPiece(
 	colors: {color1: number; color2: number},
 	config: number,
 ) {

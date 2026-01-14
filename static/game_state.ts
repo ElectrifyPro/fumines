@@ -1,5 +1,5 @@
 import {COLS, ROWS} from './config';
-import {dropGuide, grid, pieceContainer} from './graphics';
+import {dropGuide, grid, pieceContainer, queue} from './graphics';
 import {keys} from './keys';
 import {HandlingState, applyHandling, idle} from './movement';
 import {DroppedPiece, Piece} from './piece';
@@ -58,8 +58,10 @@ export class State {
 			this.queue.push(piece);
 		}
 		this.piece = this.queue.shift()!;
+
 		pieceContainer.addChild(this.piece.g);
 		dropGuide.alignToColumn(this.piece.column);
+		queue.setPieces(this.queue);
 
 		this.bpm = bpm;
 		this.movement = idle();
@@ -176,8 +178,10 @@ export class State {
 
 				// spawn new piece
 				this.piece = this.queue.shift()!;
+				queue.dequeue();
 				const newPiece = new Piece(7, -2, {color1: 0x35a99a, color2: 0xff5aae}, Math.floor(Math.random() * 16));
 				this.queue.push(newPiece);
+				queue.enqueue(newPiece);
 
 				pieceContainer.removeChildren();
 				pieceContainer.addChild(this.piece.g);
