@@ -83,6 +83,11 @@ export class State {
 	 */
 	move(direction: 1 | -1) {
 		if (this.piece instanceof Piece) {
+			if ((direction === -1 && this.piece.column <= 0) ||
+				(direction === 1 && this.piece.column >= COLS - 2)) {
+				return;
+			}
+
 			this.piece.move(direction);
 			dropGuide.alignToColumn(this.piece.column);
 		}
