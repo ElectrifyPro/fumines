@@ -149,7 +149,7 @@ export class State {
 				this.grid[c].splice(ROWS, this.grid[c].length - ROWS);
 			}
 
-			this.setMatches();
+			this.updateMatches();
 
 			grid.render(this.grid, this.matched);
 
@@ -169,9 +169,20 @@ export class State {
 	}
 
 	/**
+	 * Reset and find all matches again.
+	 */
+	resetMatches() {
+		this.matched = [];
+		for (let i = 0; i < COLS; ++i) {
+			this.matched.push([]);
+		}
+		this.updateMatches();
+	}
+
+	/**
 	 * Find all 2x2 squares to be cleared from the grid.
 	 */
-	setMatches() {
+	updateMatches() {
 		for (let c = 0; c < this.matched.length; ++c) {
 			const extraElements = this.grid[c].length - this.matched[c].length;
 			if (extraElements > 0) {
@@ -308,7 +319,7 @@ export class State {
 		}
 
 		if (hasRemoved) {
-			this.setMatches();
+			this.resetMatches();
 
 			grid.render(this.grid, this.matched);
 			console.log('bye')
