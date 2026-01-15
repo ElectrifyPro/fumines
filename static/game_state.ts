@@ -18,11 +18,11 @@ export class State {
 	grid: number[][];
 
 	/**
-	 * Grid of booleans representing which squares are part of a match and should be cleared when the timeline passes over them.
+	 * Grid of numbers representing which squares are part of a match and whether the amount of progress the timeline has made towards clearing them.
 	 *
-	 * The shape of this array matches the `grid` array.
+	 * If the corresponding element is `null`, there is no match. Otherwise, the element is a number from 0-1 representing a match's progress towards being queued for removal.
 	 */
-	matched: boolean[][] = [];
+	matched: (number | null)[][] = [];
 
 	/**
 	 * The current piece.
@@ -54,10 +54,17 @@ export class State {
 	 */
 	previousKeys: Set<string> = new Set();
 
+	/**
+	 * Previous timeline position, with 0 being the start of the grid (leftmost edge) and COLS being the end of the grid (rightmost edge).
+	 */
+	previousTimelinePosition: number = 0;
+
 	constructor(bpm: number) {
 		this.grid = [];
+		this.matched = [];
 		for (let i = 0; i < COLS; ++i) {
 			this.grid.push([]);
+			this.matched.push([]);
 		}
 
 		this.queue = [];
@@ -165,7 +172,14 @@ export class State {
 	 * Find all 2x2 squares to be cleared from the grid.
 	 */
 	setMatches() {
-		this.matched = this.grid.map(col => new Array(col.length).fill(false));
+		for (let c = 0; c < this.matched.length; ++c) {
+			const extraElements = this.grid[c].length - this.matched[c].length;
+			if (extraElements > 0) {
+				for (let i = 0; i < extraElements; ++i) {
+					this.matched[c].push(null);
+				}
+			}
+		}
 
 		for (let c = 0; c < COLS - 1; ++c) {
 			const colHeight = this.grid[c].length;
@@ -177,10 +191,10 @@ export class State {
 				if (color === this.grid[c][r + 1] &&
 					color === this.grid[c + 1][r] &&
 					color === this.grid[c + 1][r + 1]) {
-					this.matched[c][r] = true;
-					this.matched[c][r + 1] = true;
-					this.matched[c + 1][r] = true;
-					this.matched[c + 1][r + 1] = true;
+					if (this.matched[c][r] === null) this.matched[c][r] = 0;
+					if (this.matched[c][r + 1] === null) this.matched[c][r + 1] = 0;
+					if (this.matched[c + 1][r] === null) this.matched[c + 1][r] = 0;
+					if (this.matched[c + 1][r + 1] === null) this.matched[c + 1][r + 1] = 0;
 				}
 			}
 		}
@@ -240,5 +254,70 @@ export class State {
 				this.finishDrop();
 			}
 		}
+
+		// add matched progress for columns the timeline is passing
+		const currentTimelinePosition = (this.time / 1000) * (this.bpm / 60) * 2 % COLS;
+		const startCol = Math.floor(this.previousTimelinePosition);
+		const endCol = Math.floor(currentTimelinePosition);
+
+		for (let col = startCol; col <= endCol; ++col) {
+			let progressThroughCol = currentTimelinePosition - Math.max(col, this.previousTimelinePosition);
+			for (let row = 0; row < this.matched[col]?.length; ++row) {
+				if (typeof this.matched[col][row] === 'number') {
+					this.matched[col][row] += progressThroughCol;
+				}
+			}
+		}
+
+		// find clusters of columns that contain matched squares
+		const groups: {start: number, end: number}[] = [];
+		for (let c = 0; c < COLS; ++c) {
+			if (this.matched[c]?.some(v => typeof v === 'number')) {
+				if (c === groups[groups.length - 1]?.end + 1) {
+					++groups[groups.length - 1].end;
+				} else {
+					groups.push({start: c, end: c});
+				}
+			}
+		}
+
+		// only if the timeline reaches the end of a cluster will it be cleared
+		let hasRemoved = false;
+		for (const group of groups) {
+			if (currentTimelinePosition >= group.end + 1) {
+				for (let col = group.start; col <= group.end; ++col) {
+					// determine part of column with a match and remove it
+					if (this.matched[col].some(v => typeof v === 'number' && v >= 1)) {
+						hasRemoved = true;
+
+						const rowsToRemove = this.matched[col]
+							.map((progress, row) => {
+								return {progress, row};
+							})
+							.filter(data => typeof data.progress === 'number' && data.progress >= 1)
+							.reverse();
+
+						console.log('col', col, 'rows to remove', rowsToRemove);
+						for (const data of rowsToRemove) {
+							this.grid[col].splice(data.row, 1);
+							this.matched[col].splice(data.row, 1);
+						}
+					}
+				}
+			}
+		}
+
+		if (hasRemoved) {
+			this.setMatches();
+
+			grid.render(this.grid, this.matched);
+			console.log('bye')
+		}
+		// TODO:
+			grid.render(this.grid, this.matched);
+		// console.log(this.matched);
+		// console.log(JSON.stringify(groups));
+		
+		this.previousTimelinePosition = currentTimelinePosition;
 	}
 }

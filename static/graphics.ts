@@ -57,9 +57,9 @@ export const grid = {
 	/**
 	 * Render the pieces in the grid to the graphics object.
 	 * @param grid 2D array representing the grid state
-	 * @param matched 2D array representing which squares are part of a match
+	 * @param matched 2D array representing which squares are part of a match and timeline's progress towards clearing them
 	 */
-	render(grid: number[][], matched: boolean[][]) {
+	render(grid: number[][], matched: (number | null)[][]) {
 		if (this.c.children.length > 1) {
 			this.c.removeChildren(1); // remove all but the grid lines
 		}
@@ -82,14 +82,20 @@ export const grid = {
 				);
 				pieces.fill(color);
 
-				if (matched[c][r]) {
-					paddedRect(
-						pieces,
-						startX + c * SQUARE_SIZE,
-						startY + (ROWS - 1 - r) * SQUARE_SIZE,
-						SQUARE_SIZE,
-						SQUARE_SIZE,
-						2,
+				if (typeof matched[c][r] === 'number') {
+					// paddedRect(
+					// 	pieces,
+					// 	startX + c * SQUARE_SIZE,
+					// 	startY + (ROWS - 1 - r) * SQUARE_SIZE,
+					// 	SQUARE_SIZE,
+					// 	SQUARE_SIZE, // TODO: animate size as its being matched?
+					// 	2,
+					// );
+					pieces.rect(
+						startX + c * SQUARE_SIZE + 2,
+						startY + (ROWS - 1 - r) * SQUARE_SIZE + 2,
+						Math.min(matched[c][r], 1) * (SQUARE_SIZE - 4),
+						SQUARE_SIZE - 4,
 					);
 					pieces.fill({
 						color: 0xffffff,
